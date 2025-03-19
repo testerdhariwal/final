@@ -1,0 +1,2 @@
+C:/Users/ADMIN/Desktop/Masle Masail/Andorid/myapp-main/android/app/.cxx/RelWithDebInfo/1r1u5u5c/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/ADMIN/Desktop/Masle Masail/Andorid/myapp-main/android/app/.cxx/RelWithDebInfo/1r1u5u5c/x86_64/CMakeFiles/rebuild_cache.dir

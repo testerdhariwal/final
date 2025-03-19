@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1035140107927",
+    "project_id": "masle-masail-2fb53",
+    "storage_bucket": "masle-masail-2fb53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1035140107927:android:64761b1b0dbe6c6832e3d2",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHctS0qwsVdU93bKssTZ_Lb7Ab6Sm94mk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
