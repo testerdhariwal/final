@@ -121,4 +121,21 @@ class DatabaseHelper {
     final dbClient = await db;
     await dbClient.rawDelete('DELETE FROM masail');
   }
+
+  Future<List<Masail>> getPaginatedMasail(String language, int offset, int limit) async {
+  final dbClient = await db;
+  List<Map<String, dynamic>> maps = await dbClient.query(
+    'masail',
+    where: 'language = ?',
+    whereArgs: [language],
+    orderBy: 'id DESC',  // Modify sorting if needed
+    limit: limit,
+    offset: offset,
+  );
+
+  return List.generate(maps.length, (i) {
+    return Masail.fromMap(maps[i]);
+  });
+}
+
 }

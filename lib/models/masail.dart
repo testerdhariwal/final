@@ -18,12 +18,11 @@ class Masail {
 
   /// Convert Map to Masail object
   factory Masail.fromMap(Map<String, dynamic> map) {
-  return Masail(
-    id: map['id'] is int ? map['id'] : int.tryParse(map['id'].toString()), // Convert id to int
-    title: map['title'] ?? '',
-    description: map['description'] ?? '',
-    language: (map['language'] ?? '').trim(),
-  );
-}
-
+    return Masail(
+      id: map['id'] is int ? map['id'] : int.tryParse(map['id'].toString()), // Convert id to int
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      language: (map['language'] ?? '').trim(),
+    );
+  }
 }

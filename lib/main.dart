@@ -49,7 +49,7 @@ class IslamicMasailApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomePage(),
+      home: const HomePage(), // Add the 'home' parameter here
     );
   }
 }
@@ -68,11 +68,10 @@ class _HomePageState extends State<HomePage> {
   final dbHelper = DatabaseHelper();
   int _page = 1;
   bool _isLoading = false;
-  final int _pageSize = 30;
+  final int _pageSize = 5;
   DocumentSnapshot? _lastDocument;
   String _selectedLanguage = 'English';
   final List<String> _languages = ['English', 'Hindi', 'Gujarati'];
-
 
   @override
   void initState() {
@@ -88,6 +87,8 @@ class _HomePageState extends State<HomePage> {
       QuerySnapshot<Map<String, dynamic>> query = await FirebaseFirestore.instance
           .collection('masail')
           .where('language', isEqualTo: _selectedLanguage)
+          .orderBy('title')
+          .limit(_pageSize)
           .get();
       print('Firestore query complete. Number of documents: ${query.docs.length}');
 
@@ -95,6 +96,8 @@ class _HomePageState extends State<HomePage> {
         print('No documents found in Firestore.');
         return; // Handle empty Firestore collection
       }
+
+      _lastDocument = query.docs.last;
 
       await dbHelper.deleteAllMasail();
       print('Deleted existing data from SQLite.');
@@ -117,13 +120,64 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+ Future<void> _loadMoreMasails() async {
+  if (_isLoading) return;
+  setState(() => _isLoading = true);
 
-  Future<void> _loadMoreMasails() async {
-    if (_isLoading) return; // Prevent multiple calls while loading
-    setState(() => _isLoading = true);
-    _page++;
-    _loadMasails();
+  try {
+    print('Checking SQLite for more Masails...');
+    List<Masail> localMasails = await dbHelper.getPaginatedMasail(_selectedLanguage, _masails.length, _pageSize);
+
+    if (localMasails.isNotEmpty) {
+      print('Loaded more Masails from SQLite.');
+      setState(() {
+        _masails.addAll(localMasails);
+      });
+    } else {
+      print('No more data in SQLite. Fetching from Firestore...');
+      if (_lastDocument == null) {
+        print('No more data available.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No more masails found.'), duration: Duration(seconds: 2)),
+        );
+        return;
+      }
+
+      QuerySnapshot<Map<String, dynamic>> query = await FirebaseFirestore.instance
+          .collection('masail')
+          .where('language', isEqualTo: _selectedLanguage)
+          .orderBy('title')
+          .startAfterDocument(_lastDocument!)
+          .limit(_pageSize)
+          .get();
+
+      if (query.docs.isEmpty) {
+        print('No more documents found in Firestore.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No more masails found.'), duration: Duration(seconds: 2)),
+        );
+        return;
+      }
+
+      _lastDocument = query.docs.last;
+
+      for (var doc in query.docs) {
+        Masail masail = Masail.fromMap(doc.data());
+        await dbHelper.saveMasail(masail);
+      }
+
+      _masails = await dbHelper.getMasailByLanguage(_selectedLanguage);
+      print('Fetched and stored ${query.docs.length} new Masails from Firestore.');
+    }
+  } catch (error) {
+    print('Error fetching more data: $error');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading more data: $error')));
+  } finally {
+    setState(() => _isLoading = false);
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -152,21 +206,21 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           const SizedBox(width: 16), // Add some spacing
-         DropdownButton<String>(
-  value: _selectedLanguage,
-  items: _languages.map((language) {
-    return DropdownMenuItem<String>(
-      value: language,
-      child: Text(language),
-    );
-  }).toList(),
-  onChanged: (value) {
-    setState(() {
-      _selectedLanguage = value!;
-      _loadMasails();
-    });
-  },
-),
+          DropdownButton<String>(
+            value: _selectedLanguage,
+            items: _languages.map((language) {
+              return DropdownMenuItem<String>(
+                value: language,
+                child: Text(language),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedLanguage = value!;
+                _loadMasails();
+              });
+            },
+          ),
         ],
       ),
       body: Column(
@@ -196,29 +250,26 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(8.0),
-              itemCount: filteredMasails.length,
+              itemCount: filteredMasails.length + 1,
               itemBuilder: (context, index) {
-                if (index == filteredMasails.length - 1 && !_isLoading && _lastDocument != null) {
-                  return const Center(child: CircularProgressIndicator());
+                if (index == filteredMasails.length) {
+                  return _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _lastDocument != null
+                          ? Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: ElevatedButton(
+                                onPressed: _loadMoreMasails,
+                                child: const Text('Load More'),
+                              ),
+                            )
+                          : const SizedBox.shrink();
                 }
                 final masail = filteredMasails[index];
                 return QuestionCard(masail: masail);
               },
             ),
           ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          if (!_isLoading && _lastDocument != null)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: _loadMoreMasails,
-                child: const Text('Load More'),
-              ),
-            ),
         ],
       ),
     );
