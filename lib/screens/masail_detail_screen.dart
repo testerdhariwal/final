@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myapp/models/masail.dart';
+import 'package:share_plus/share_plus.dart';
 
 class MasailDetailScreen extends StatelessWidget {
   final Masail masail;
@@ -17,6 +18,18 @@ class MasailDetailScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black87),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.black87),
+            onPressed: () {
+              // Share functionality
+              Share.share(
+                '${masail.title}\n\n${masail.description}',
+                subject: 'Islamic Masail',
+              );
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

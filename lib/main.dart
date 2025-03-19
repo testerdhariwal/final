@@ -5,6 +5,7 @@ import 'package:myapp/data/database_helper.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
+import 'package:share_plus/share_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -241,13 +242,30 @@ class QuestionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              masail.title,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                color: theme.textTheme.bodyLarge?.color,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    masail.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      color: theme.textTheme.bodyLarge?.color,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.share, color: theme.primaryColor),
+                  onPressed: () {
+                    // Share functionality
+                    Share.share(
+                      '${masail.title}\n\n${masail.description}',
+                      subject: 'Islamic Masail',
+                    );
+                  },
+                ),
+              ],
             ),
             Text(
               masail.description,
