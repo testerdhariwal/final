@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
   List<Masail> _masails = [];
   String _searchQuery = '';
   final dbHelper = DatabaseHelper();
-  int _page = 1;
+  final int _page = 1;
   bool _isLoading = false;
   final int _pageSize = 5;
   DocumentSnapshot? _lastDocument;
