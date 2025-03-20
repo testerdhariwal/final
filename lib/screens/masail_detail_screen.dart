@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:myapp/models/masail.dart';
 import 'package:share_plus/share_plus.dart';
 
+
 class MasailDetailScreen extends StatelessWidget {
   final Masail masail;
 

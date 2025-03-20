@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,45 +81,66 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMasails() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-    try {
-      print('Fetching data from Firestore...');
-      QuerySnapshot<Map<String, dynamic>> query = await FirebaseFirestore.instance
-          .collection('masail')
-          .where('language', isEqualTo: _selectedLanguage)
-          .orderBy('title')
-          .limit(_pageSize)
-          .get();
-      print('Firestore query complete. Number of documents: ${query.docs.length}');
+  if (_isLoading) return;
+  setState(() => _isLoading = true);
 
-      if (query.docs.isEmpty) {
-        print('No documents found in Firestore.');
-        return; // Handle empty Firestore collection
-      }
-
-      _lastDocument = query.docs.last;
-
-      await dbHelper.deleteAllMasail();
-      print('Deleted existing data from SQLite.');
-
-      for (var doc in query.docs) {
-        Masail masail = Masail.fromMap(doc.data());
-        final result = await dbHelper.saveMasail(masail);
-        print('Inserted Masail into SQLite. Result: $result');
-      }
-
-      _masails = await dbHelper.getMasailByLanguage(_selectedLanguage);
-      print('Fetched ${_masails.length} Masail from SQLite.');
-    } catch (error) {
-      print('Error fetching or saving data: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $error')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  // Step 1: Load data from SQLite first
+  List<Masail> localMasails = await dbHelper.getMasailByLanguage(_selectedLanguage);
+  if (localMasails.isNotEmpty) {
+    setState(() {
+      _masails = localMasails;
+    });
+    print('Loaded ${_masails.length} Masails from SQLite.');
   }
+
+  // Step 2: Check internet connection
+  final connectivityResult = await Connectivity().checkConnectivity();
+  if (connectivityResult == ConnectivityResult.none) {
+    print('No internet. Displaying offline data.');
+    setState(() => _isLoading = false);
+    return; // Stop here, SQLite data is already loaded
+  }
+
+  // Step 3: Fetch new data from Firestore
+  try {
+    print('Fetching data from Firestore...');
+    QuerySnapshot<Map<String, dynamic>> query = await FirebaseFirestore.instance
+        .collection('masail')
+        .where('language', isEqualTo: _selectedLanguage)
+        .orderBy('title')
+        .limit(_pageSize)
+        .get();
+
+    if (query.docs.isEmpty) {
+      print('No new documents found in Firestore.');
+      return;
+    }
+
+    _lastDocument = query.docs.last;
+
+    // Step 4: Clear old SQLite data and save new data
+    await dbHelper.deleteAllMasail();
+    print('Deleted existing SQLite data.');
+
+    for (var doc in query.docs) {
+      Masail masail = Masail.fromMap(doc.data());
+      await dbHelper.saveMasail(masail);
+    }
+
+    // Step 5: Load updated data from SQLite
+    _masails = await dbHelper.getMasailByLanguage(_selectedLanguage);
+    print('Updated SQLite and loaded ${_masails.length} Masails.');
+
+  } catch (error) {
+    print('Error fetching or saving data: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error loading data: $error')),
+    );
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
 
  Future<void> _loadMoreMasails() async {
   if (_isLoading) return;
